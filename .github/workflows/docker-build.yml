@@ -25,7 +25,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
-          context: .
-          file: ./backend/Dockerfile # ← backend 폴더에 있다면 ./backend/Dockerfile 로 수정
+          context: ./backend # ✅ backend 폴더를 빌드 기준으로
+          file: ./backend/Dockerfile # ✅ Dockerfile 경로 지정
           push: true
           tags: yuyuyubin/4_2capstone:latest
