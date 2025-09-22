@@ -29,3 +29,4 @@ jobs:
           file: ./backend/Dockerfile # ✅ Dockerfile 경로 지정
           push: true
           tags: yuyuyubin/4_2capstone:latest
+          platforms: linux/amd64
