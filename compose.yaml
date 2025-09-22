@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16.0
+    container_name: capstone-db
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app_pw
+      POSTGRES_DB: appdb
+      TZ: Asia/Seoul
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d appdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  backend:
+    build: ./backend
+    image: capstone/backend:latest
+    container_name: capstone-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://app:app_pw@db:5432/appdb
+      TZ: Asia/Seoul
+    ports:
+      - "8000:8000"
+
+  backup:
+    image: postgres:16.0
+    container_name: capstone-db-backup
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app_pw
+      POSTGRES_DB: appdb
+      POSTGRES_HOST: db
+      TZ: Asia/Seoul
+    volumes:
+      - ./backup:/backup
+      - ./backup.sh:/docker-entrypoint-initdb.d/backup.sh
+    command: ["bash", "/docker-entrypoint-initdb.d/backup.sh"]
+
+  superset:
+    image: apache/superset:latest
+    container_name: capstone-superset
+    ports:
+      - "8088:8088"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SUPERSET_SECRET_KEY: "capstone-secret-key"
+      TZ: Asia/Seoul
+    volumes:
+      - superset_data:/app/superset_home
+    restart: always
+
+volumes:
+  superset_data:
