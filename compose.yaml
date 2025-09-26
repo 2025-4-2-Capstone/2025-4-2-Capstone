@@ -12,7 +12,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./db:/var/lib/postgresql/data
+      - dbdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U app -d appdb"]
       interval: 10s
@@ -64,7 +64,7 @@ services:
       - superset_data:/app/superset_home
     restart: always
 
-  pgadmin: # ✅ 추가된 pgAdmin 서비스
+  pgadmin:
     image: dpage/pgadmin4
     container_name: capstone-pgadmin
     environment:
@@ -80,5 +80,6 @@ services:
     restart: unless-stopped
 
 volumes:
+  dbdata: # ✅ PostgreSQL 도커 볼륨
   superset_data:
   pgadmin_data:
