@@ -1,21 +1,24 @@
 "use client";
 
-import Sidebar from "../../components/layout/Sidebar";
-import Header from "../../components/layout/Header";
+import Sidebar from "@/components/layout/Sidebar";
+import Header from "@/components/layout/Header";
+import { useUserStore } from "@/stores/userStore";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { user } = useUserStore();
+
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* 왼쪽 사이드바 */}
-      <Sidebar />
+      {/* 롤 전달 */}
+      <Sidebar role={user?.role} />
 
-      {/* 오른쪽 메인 영역 */}
       <div className="flex-1 flex flex-col">
-        {/* 상단 헤더 */}
-        <Header />
-
-        {/* 콘텐츠 영역 */}
-        <main className="flex-1 p-8 bg-gray-50">{children}</main>
+        <Header role={user?.role} />
+        <main className="flex-1 p-8">{children}</main>
       </div>
     </div>
   );
