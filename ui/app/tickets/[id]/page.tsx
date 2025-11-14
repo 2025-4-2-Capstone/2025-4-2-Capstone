@@ -4,7 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useState } from "react";
 import { ArrowLeft, Edit3, X } from "lucide-react";
 
-// 임시 데이터
+// ✅ 임시 티켓 데이터
 const MOCK_TICKETS = [
   {
     id: 1,
@@ -26,14 +26,40 @@ const MOCK_TICKETS = [
   },
 ];
 
+// ✅ 처리 로그 (임시 목업)
+const MOCK_LOGS = [
+  {
+    action: "티켓 생성",
+    details: "홍길동이 티켓을 생성했습니다.",
+    timestamp: "2025-11-10 13:32",
+  },
+  {
+    action: "담당자 배정",
+    details: "김철수가 담당자로 지정되었습니다.",
+    timestamp: "2025-11-10 14:02",
+  },
+  {
+    action: "상태 변경",
+    details: "열림 → 진행중 으로 상태가 변경되었습니다.",
+    timestamp: "2025-11-10 15:45",
+  },
+  {
+    action: "코멘트 추가",
+    details: "홍길동: 원인 파악 중입니다.",
+    timestamp: "2025-11-10 16:12",
+  },
+  {
+    action: "해결 완료",
+    details: "문제가 해결되었습니다. 티켓 종료 처리.",
+    timestamp: "2025-11-10 17:30",
+  },
+];
+
 export default function TicketDetailPage() {
   const router = useRouter();
   const params = useParams();
   const ticketId = Number(params.id);
-  const originalTicket = MOCK_TICKETS.find((t) => t.id === ticketId);
-
-  // 티켓 정보 상태 관리
-  const [ticket, setTicket] = useState(originalTicket);
+  const ticket = MOCK_TICKETS.find((t) => t.id === ticketId);
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   if (!ticket) {
@@ -101,113 +127,22 @@ export default function TicketDetailPage() {
         </div>
       </div>
 
-      {/* 수정 모달 */}
-      {isEditOpen && (
-        <EditModal
-          ticket={ticket}
-          onClose={() => setIsEditOpen(false)}
-          onSave={(updated) => {
-            setTicket(updated);
-            setIsEditOpen(false);
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-/* ----------------- 모달 컴포넌트 ----------------- */
-function EditModal({
-  ticket,
-  onClose,
-  onSave,
-}: {
-  ticket: any;
-  onClose: () => void;
-  onSave: (updated: any) => void;
-}) {
-  const [form, setForm] = useState(ticket);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-[500px] p-6 relative">
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
-          <X className="w-5 h-5" />
-        </button>
-
-        <h2 className="text-lg font-semibold text-slate-800 mb-4">티켓 수정</h2>
-
-        <div className="flex flex-col gap-3">
-          <label className="text-sm text-slate-600">제목</label>
-          <input
-            name="title"
-            value={form.title}
-            onChange={handleChange}
-            className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          />
-
-          <label className="text-sm text-slate-600">상태</label>
-          <select
-            name="status"
-            value={form.status}
-            onChange={handleChange}
-            className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          >
-            <option>열림</option>
-            <option>진행중</option>
-            <option>해결됨</option>
-            <option>종료</option>
-          </select>
-
-          <label className="text-sm text-slate-600">우선순위</label>
-          <select
-            name="priority"
-            value={form.priority}
-            onChange={handleChange}
-            className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          >
-            <option>긴급</option>
-            <option>높음</option>
-            <option>보통</option>
-            <option>낮음</option>
-          </select>
-
-          <label className="text-sm text-slate-600">담당자</label>
-          <input
-            name="assignee"
-            value={form.assignee}
-            onChange={handleChange}
-            className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          />
-
-          <label className="text-sm text-slate-600">내용</label>
-          <textarea
-            name="description"
-            value={form.description}
-            onChange={handleChange}
-            rows={4}
-            className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
-          />
-        </div>
-
-        <div className="flex justify-end gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm rounded-md border text-slate-600 hover:bg-gray-50"
-          >
-            취소
-          </button>
-          <button
-            onClick={() => onSave(form)}
-            className="px-4 py-2 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
-          >
-            저장
-          </button>
+      {/* ✅ 처리 이력(Log Timeline) */}
+      <div className="mt-10">
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">처리 이력</h3>
+        <div className="relative border-l border-slate-200 pl-4">
+          {MOCK_LOGS.map((log, index) => (
+            <div key={index} className="mb-6 relative">
+              {/* 점 */}
+              <div className="absolute -left-[9px] top-1.5 w-2 h-2 rounded-full bg-indigo-500" />
+              {/* 로그 내용 */}
+              <div className="bg-white rounded-md shadow-sm border border-gray-100 p-3">
+                <p className="text-sm text-slate-800 font-medium">{log.action}</p>
+                <p className="text-xs text-slate-500 mt-1">{log.details}</p>
+                <p className="text-xs text-slate-400 mt-1">{log.timestamp}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
