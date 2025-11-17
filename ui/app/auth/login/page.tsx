@@ -3,32 +3,36 @@
 
 import { useState } from "react";
 import { FaGoogle, FaGithub } from "react-icons/fa";
+import BrandLogo from "@/components/Logo/logo";
 
 export default function LoginPage() {
   const [autoSignIn, setAutoSignIn] = useState(true);
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen page-fadein">
+
       {/* Left Side */}
       <div className="w-1/2 bg-indigo-100 flex flex-col items-center justify-center">
-        <h1 className="text-3xl font-bold text-indigo-700 mb-4">SSO Login</h1>
-        <div className="bg-white rounded-full shadow-md p-8">
-          <img
-            src="/logo.png"
-            alt="Mascot"
-            className="w-40 h-40 object-contain"
-          />
+
+        {/* Brand Logo */}
+        <div className="mb-12 scale-125">
+          <BrandLogo />
         </div>
+
+        <p className="text-indigo-700 font-semibold text-xl mt-4 tracking-wide">
+          Operation Log System
+        </p>
       </div>
 
       {/* Right Side */}
       <div className="w-1/2 flex flex-col justify-center items-center bg-white">
         <div className="w-80">
+
           <h2 className="text-3xl font-bold text-center mb-8 text-indigo-700">
             Casdoor
           </h2>
 
-          {/* Tabs (Password / WebAuthn) */}
+          {/* Tabs */}
           <div className="flex justify-center gap-4 mb-6">
             <button className="text-indigo-700 font-semibold border-b-2 border-indigo-700">
               Password
@@ -85,8 +89,10 @@ export default function LoginPage() {
               Sign up now
             </a>
           </p>
+
         </div>
       </div>
+
     </div>
   );
 }
