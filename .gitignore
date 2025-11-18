@@ -13,4 +13,4 @@ __pycache__/
 *.tar
 
 
-node_modules
+node_modules/
