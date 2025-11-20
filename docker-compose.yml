@@ -1,4 +1,4 @@
-version: "3.9"
+# version: "3.9"   # Compose v2 이상에서는 생략 권장
 
 services:
   db:
@@ -27,28 +27,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      DATABASE_URL: "postgresql://app:app_pw@db:5432/appdb"
+    env_file:
+      - .env # ✅ .env 로드
+    environment: # ✅ 명시적으로 .env 값 전달 (우선순위 ↑)
+      DATABASE_URL: ${DATABASE_URL}
       TZ: Asia/Seoul
     ports:
       - "8000:8000"
-
-  # backup:
-  #   image: postgres:16.0
-  #   container_name: capstone-db-backup
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #   environment:
-  #     POSTGRES_USER: app
-  #     POSTGRES_PASSWORD: app_pw
-  #     POSTGRES_DB: appdb
-  #     POSTGRES_HOST: db
-  #     TZ: Asia/Seoul
-  #   volumes:
-  #     - ./backup:/backup
-  #     - ./backup.sh:/docker-entrypoint-initdb.d/backup.sh
-  #   command: ["bash", "/docker-entrypoint-initdb.d/backup.sh"]
+    restart: always
 
   superset:
     build:
@@ -61,14 +47,19 @@ services:
     ports:
       - "8088:8088"
     env_file:
-      - "C:/Users/save0/OneDrive/Desktop/2025-4-2-Capstone/.env"
+      - .env
     volumes:
       - superset_data:/app/superset_home
     command: >
       /bin/bash -c "
-        superset db upgrade && \
-        superset fab create-admin --username ${ADMIN_USERNAME} --firstname ${ADMIN_FIRSTNAME} --lastname ${ADMIN_LASTNAME} --email ${ADMIN_EMAIL} --password ${ADMIN_PASSWORD} && \
-        superset init && \
+        superset db upgrade &&
+        superset fab create-admin \
+          --username ${ADMIN_USERNAME} \
+          --firstname ${ADMIN_FIRSTNAME} \
+          --lastname ${ADMIN_LASTNAME} \
+          --email ${ADMIN_EMAIL} \
+          --password ${ADMIN_PASSWORD} &&
+        superset init &&
         superset run -h 0.0.0.0 -p 8088
       "
     restart: always

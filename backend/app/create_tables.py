@@ -1,37 +1,24 @@
-from app.database import engine
+# ✅ create_tables.py
+from app.database import engine, Base
 from sqlalchemy import text
 from app import models
 import bcrypt
-from dotenv import load_dotenv
-import os
 
-load_dotenv()
-
-# ⛔ OneDrive 환경에서 env 파일이 꼬일 때 강제로 덮어쓰기
-os.environ["DATABASE_URL"] = "postgresql://app:app_pw@localhost:5432/appdb"
-
-from sqlalchemy import create_engine
-from app import models
-
-# ⛔ engine을 database.py에서 가져오지 말고 직접 새로 생성해야 함
-engine = create_engine(os.environ["DATABASE_URL"])
-
-# 🔍 지금 이 스크립트가 어떤 DB를 바라보고 있는지 확인
-print("📌 Using DB:", os.getenv("DATABASE_URL"))
+# ✅ 지금 연결된 DB 확인
+print(f"📌 Using DB from engine.url: {engine.url}")
 
 print("⚠️ Dropping existing tables...")
+Base.metadata.drop_all(bind=engine)
 
-# 1) 기존 모든 테이블 삭제 후 재생성
-models.Base.metadata.drop_all(bind=engine)
 print("⏳ Creating all tables...")
-models.Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 print("✅ Tables recreated successfully!")
 
-# 2) bcrypt로 비밀번호 해시 생성
+# ✅ bcrypt로 비밀번호 해시 생성
 plain_pw = "capstone42"
 hashed_pw = bcrypt.hashpw(plain_pw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
-# 3) 기본 Role 데이터 생성
+# ✅ 기본 Role 데이터 생성
 with engine.begin() as conn:
     conn.execute(text("""
         INSERT INTO roles (id, name, hierarchy_level, description)
@@ -47,7 +34,7 @@ with engine.begin() as conn:
     """))
 print("✅ Roles inserted")
 
-# 4) 기본 Department 데이터 생성
+# ✅ 기본 Department 데이터 생성
 with engine.begin() as conn:
     conn.execute(text("""
         INSERT INTO departments (id, name)
@@ -63,7 +50,7 @@ with engine.begin() as conn:
     """))
 print("✅ Departments inserted")
 
-# 5) SLA 정책 데이터 생성
+# ✅ SLA 정책 데이터 생성
 with engine.begin() as conn:
     conn.execute(text("""
         INSERT INTO sla_policies (id, priority, response_time_days, resolve_time_days)
@@ -76,7 +63,7 @@ with engine.begin() as conn:
     """))
 print("✅ SLA 정책(일 단위) 생성 완료")
 
-# 6) 슈퍼 관리자 계정 자동 생성
+# ✅ 슈퍼 관리자 계정 자동 생성
 with engine.begin() as conn:
     conn.execute(text(f"""
         INSERT INTO users (username, email, password_hash, role_id, department_id, is_active)
