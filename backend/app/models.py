@@ -64,13 +64,15 @@ class SlaPolicy(Base):
     __tablename__ = "sla_policies"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False)
-    target_response_minutes = Column(Integer, nullable=False)  # ✅ 응답 목표 시간(분)
-    target_resolution_minutes = Column(Integer, nullable=False)  # ✅ 해결 목표 시간(분)
-    description = Column(Text, nullable=True)  # ✅ 정책 설명 (선택사항)
 
-    # ✅ Ticket과의 양방향 관계
+    # 🎯 변경된 컬럼 구조
+    priority = Column(String(20), nullable=False)   # low / normal / high / urgent
+    response_time_days = Column(Integer, nullable=False)  # 목표 응답 기간(일)
+    resolve_time_days = Column(Integer, nullable=False)   # 목표 해결 기간(일)
+
+    # 🔥 Ticket과 연결 (양방향)
     tickets = relationship("Ticket", back_populates="sla_policy")
+
 
 
 
@@ -149,8 +151,19 @@ class AuditLog(Base):
     details = Column(Text)
     timestamp = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
-    # ✅ 여기가 핵심 — 누락되어 있던 관계 정의
+    # -----------------------------
+    #   🔥 고급 감사 정보 확장
+    # -----------------------------
+    session_id = Column(String(200), nullable=True)          # ⭐ JWT 앞부분 저장
+    ip_address = Column(String(100), nullable=True)          # 사용자 IP 기록
+    user_agent = Column(String(255), nullable=True)          # 브라우저/디바이스 정보
+    changed_fields = Column(Text, nullable=True)             # 변경된 필드(JSON 문자열)
+    target_department_id = Column(Integer, nullable=True)    # 작업 대상 부서
+
+    # 관계 유지
     user = relationship("User", back_populates="audit_logs")
+
+
 
 
 

@@ -1,14 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel
-
+from typing import Literal
 from app.utils.audit import write_audit_log
 import app.models as models
 from app.database import get_db
 from app.routers.auth import get_current_user
-
 
 router = APIRouter(tags=["Tickets"])
 
@@ -19,9 +18,8 @@ router = APIRouter(tags=["Tickets"])
 class TicketCreate(BaseModel):
     title: str
     description: str
-    priority: str
+    priority: Literal["low", "normal", "high", "urgent"]
     assigned_to: Optional[int] = None
-    sla_policy_id: Optional[int] = None
 
 
 # -----------------------------
@@ -63,14 +61,21 @@ class TicketResponse(BaseModel):
 @router.post("/tickets", response_model=TicketResponse)
 def create_ticket(
     ticket: TicketCreate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    # ⭐ priority를 통해 SLA 자동 선택
-    sla_policy = db.query(models.SLAPolicy)\
-                   .filter(models.SLAPolicy.priority == ticket.priority)\
-                   .first()
 
+    # 1) SLA 자동 선택
+    sla_policy = (
+        db.query(models.SlaPolicy)
+        .filter(models.SlaPolicy.priority == ticket.priority)
+        .first()
+    )
+    if not sla_policy:
+        raise HTTPException(status_code=400, detail="해당 우선순위의 SLA 정책이 존재하지 않습니다.")
+
+    # 2) 티켓 생성
     new_ticket = models.Ticket(
         title=ticket.title,
         description=ticket.description,
@@ -78,27 +83,28 @@ def create_ticket(
         status="open",
         created_by=current_user.id,
         assigned_to=ticket.assigned_to,
-        sla_policy_id=sla_policy.id if sla_policy else None,
+        sla_policy_id=sla_policy.id,
         department_id=current_user.department_id,
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
     )
 
     db.add(new_ticket)
     db.commit()
     db.refresh(new_ticket)
 
+    # 3) 감사 로그 기록
     write_audit_log(
         db=db,
         user_id=current_user.id,
         action="create",
         target_table="tickets",
         target_id=new_ticket.id,
-        details=f"title={new_ticket.title}, priority={new_ticket.priority}"
+        details=f"title={new_ticket.title}, priority={new_ticket.priority}",
+        request=request
     )
 
     return new_ticket
-
 
 
 # -----------------------------
@@ -109,30 +115,24 @@ def get_all_tickets(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    try:
-        role = current_user.role.name
+    role = current_user.role.name
 
-        if role == "super_admin":
-            tickets = db.query(models.Ticket).all()
+    if role == "super_admin":
+        return db.query(models.Ticket).all()
 
-        elif role in ["admin", "manager"]:
-            tickets = (
-                db.query(models.Ticket)
-                .filter(models.Ticket.department_id == current_user.department_id)
-                .all()
-            )
+    elif role in ["admin", "manager"]:
+        return (
+            db.query(models.Ticket)
+            .filter(models.Ticket.department_id == current_user.department_id)
+            .all()
+        )
 
-        else:
-            tickets = (
-                db.query(models.Ticket)
-                .filter(models.Ticket.created_by == current_user.id)
-                .all()
-            )
-
-        return tickets
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    else:
+        return (
+            db.query(models.Ticket)
+            .filter(models.Ticket.created_by == current_user.id)
+            .all()
+        )
 
 
 # -----------------------------
@@ -151,98 +151,94 @@ def get_ticket(
 
     role = current_user.role.name
 
-    # super_admin 전체 접근 가능
     if role != "super_admin":
 
-        # admin / manager → 자기 부서 티켓만 조회
         if role in ["admin", "manager"]:
             if ticket.department_id != current_user.department_id:
                 raise HTTPException(status_code=403, detail="다른 부서의 티켓입니다.")
 
-        # 일반 사용자 → 자기 티켓만 조회
         else:
             if ticket.created_by != current_user.id:
-                raise HTTPException(status_code=403, detail="본인 티켓만 조회할 수 있습니다.")
+                raise HTTPException(status_code=403, detail="본인 티켓만 조회 가능")
 
     return ticket
 
 
 # -----------------------------
-# 📌 Update Ticket (역할 기반 권한)
+# 📌 Update Ticket (권한 기반 수정)
 # -----------------------------
 @router.put("/tickets/{ticket_id}")
 def update_ticket(
     ticket_id: int,
     data: TicketUpdateRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
 
     ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
-
     if not ticket:
         raise HTTPException(status_code=404, detail="티켓을 찾을 수 없습니다.")
 
     role = current_user.role.name
-    user_dept = current_user.department_id
-    ticket_dept = ticket.department_id
 
     # -----------------------------
-    # 📌 역할 기반 수정 권한
+    # 권한 체크
     # -----------------------------
-    # super_admin / admin → 전체 수정 가능
     if role in ["super_admin", "admin"]:
         pass
 
-    # manager → 자기 부서 전체 티켓 수정 가능
     elif role == "manager":
-        if user_dept != ticket_dept:
-            raise HTTPException(status_code=403, detail="부서장: 해당 부서 티켓만 수정 가능.")
+        if ticket.department_id != current_user.department_id:
+            raise HTTPException(status_code=403, detail="부서장: 해당 부서만 수정 가능")
 
-    # staff / engineer / user → 자기 티켓만 수정
     elif role in ["engineer", "staff", "user"]:
         if ticket.created_by != current_user.id:
-            raise HTTPException(status_code=403, detail="본인 티켓만 수정 가능합니다.")
+            raise HTTPException(status_code=403, detail="본인 티켓만 수정 가능")
 
     else:
-        raise HTTPException(status_code=403, detail="권한이 없습니다.")
+        raise HTTPException(status_code=403, detail="권한 없음")
+
 
     # -----------------------------
-    # 📌 실제 수정 적용
+    # 필드 수정
     # -----------------------------
-    updated = False
+    updated_fields = {}
 
     if data.title is not None:
         ticket.title = data.title
-        updated = True
+        updated_fields["title"] = data.title
 
     if data.description is not None:
         ticket.description = data.description
-        updated = True
+        updated_fields["description"] = data.description
 
     if data.priority is not None:
         ticket.priority = data.priority
-        updated = True
+        updated_fields["priority"] = data.priority
 
     if data.status is not None:
         ticket.status = data.status
-        updated = True
+        updated_fields["status"] = data.status
 
-    if not updated:
+    if not updated_fields:
         raise HTTPException(status_code=400, detail="수정할 데이터가 없습니다.")
 
     ticket.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(ticket)
 
+    # -----------------------------
     # 감사 로그 기록
+    # -----------------------------
     write_audit_log(
         db=db,
         user_id=current_user.id,
         action="update",
         target_table="tickets",
         target_id=ticket.id,
-        details=f"updated fields: {data.model_dump(exclude_none=True)}"
+        details=str(updated_fields),
+        request=request
     )
 
-    return {"msg": "티켓이 성공적으로 수정되었습니다.", "ticket": ticket}
+    return {"msg": "티켓 수정 완료", "ticket": ticket}

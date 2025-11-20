@@ -1,7 +1,23 @@
-from database import engine
+from app.database import engine
 from sqlalchemy import text
-import models
+from app import models
 import bcrypt
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+# ⛔ OneDrive 환경에서 env 파일이 꼬일 때 강제로 덮어쓰기
+os.environ["DATABASE_URL"] = "postgresql://app:app_pw@localhost:5432/appdb"
+
+from sqlalchemy import create_engine
+from app import models
+
+# ⛔ engine을 database.py에서 가져오지 말고 직접 새로 생성해야 함
+engine = create_engine(os.environ["DATABASE_URL"])
+
+# 🔍 지금 이 스크립트가 어떤 DB를 바라보고 있는지 확인
+print("📌 Using DB:", os.getenv("DATABASE_URL"))
 
 print("⚠️ Dropping existing tables...")
 
@@ -47,7 +63,7 @@ with engine.begin() as conn:
     """))
 print("✅ Departments inserted")
 
-# 5) 새 SLA 정책 테이블 기반 데이터 자동 생성 (일 기준)
+# 5) SLA 정책 데이터 생성
 with engine.begin() as conn:
     conn.execute(text("""
         INSERT INTO sla_policies (id, priority, response_time_days, resolve_time_days)

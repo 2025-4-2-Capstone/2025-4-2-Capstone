@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 import app.models as models
 from app.database import get_db
 from app.routers.auth import get_current_user
+from app.utils.audit import write_audit_log
 
 router = APIRouter(tags=["Users"])
 
@@ -38,6 +39,7 @@ def get_pending_users(
 def approve_user(
     user_id: int,
     body: ApproveUserRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
@@ -71,6 +73,27 @@ def approve_user(
 
     db.commit()
     db.refresh(user)
+
+    # ============================
+    # 📌 감사 로그 기록 추가
+    # ============================
+    changed = {
+        "assigned_role": role.name,
+        "assigned_department": department.name,
+        "activated": True
+    }
+
+    write_audit_log(
+        db=db,
+        user_id=current_user.id,
+        action="approve_user",
+        target_table="users",
+        target_id=user.id,
+        details=f"{changed}",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("User-Agent"),
+        target_department_id=user.department_id,
+    )
 
     return {
         "msg": f"{user.username} 계정 승인 완료",
