@@ -1,4 +1,4 @@
-# version: "3.9"   # Compose v2 이상에서는 생략 권장
+version: "3.9"
 
 services:
   db:
@@ -28,8 +28,8 @@ services:
       db:
         condition: service_healthy
     env_file:
-      - .env # ✅ .env 로드
-    environment: # ✅ 명시적으로 .env 값 전달 (우선순위 ↑)
+      - .env
+    environment:
       DATABASE_URL: ${DATABASE_URL}
       TZ: Asia/Seoul
     ports:
@@ -53,12 +53,7 @@ services:
     command: >
       /bin/bash -c "
         superset db upgrade &&
-        superset fab create-admin \
-          --username ${ADMIN_USERNAME} \
-          --firstname ${ADMIN_FIRSTNAME} \
-          --lastname ${ADMIN_LASTNAME} \
-          --email ${ADMIN_EMAIL} \
-          --password ${ADMIN_PASSWORD} &&
+        superset fab create-admin --username ${ADMIN_USERNAME} --firstname ${ADMIN_FIRSTNAME} --lastname ${ADMIN_LASTNAME} --email ${ADMIN_EMAIL} --password ${ADMIN_PASSWORD} || true &&
         superset init &&
         superset run -h 0.0.0.0 -p 8088
       "
