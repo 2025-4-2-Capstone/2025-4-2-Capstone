@@ -1,40 +1,41 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Edit3, X } from "lucide-react";
-
-// 임시 데이터
-const MOCK_TICKETS = [
-  {
-    id: 1,
-    title: "DB 연결 오류",
-    description: "PostgreSQL 연결이 간헐적으로 끊기는 현상 발생. 서버 로그 분석 필요.",
-    status: "진행중",
-    priority: "높음",
-    assignee: "홍길동",
-    created: "2025-11-10",
-  },
-  {
-    id: 2,
-    title: "API 응답 지연",
-    description: "FastAPI 응답 속도가 비정상적으로 느림. SLA 기준 초과.",
-    status: "해결됨",
-    priority: "보통",
-    assignee: "김철수",
-    created: "2025-11-09",
-  },
-];
+import StatusBadge from "@/components/ticket/StatusBadge";
+import PriorityBadge from "@/components/ticket/PriorityBadge";
+import { api } from "@/lib/api";
 
 export default function TicketDetailPage() {
   const router = useRouter();
   const params = useParams();
   const ticketId = Number(params.id);
-  const originalTicket = MOCK_TICKETS.find((t) => t.id === ticketId);
 
-  // 티켓 정보 상태 관리
-  const [ticket, setTicket] = useState(originalTicket);
+  const [ticket, setTicket] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [isEditOpen, setIsEditOpen] = useState(false);
+
+  // 🔥 실제 API 호출로 데이터 가져오기
+  useEffect(() => {
+    async function fetchTicket() {
+      try {
+        const res = await api.get(`/tickets/${ticketId}`);
+        setTicket(res.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTicket();
+  }, [ticketId]);
+
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-slate-600">불러오는 중...</div>
+    );
+  }
 
   if (!ticket) {
     return (
@@ -85,11 +86,13 @@ export default function TicketDetailPage() {
         </div>
         <div>
           <p className="text-sm text-slate-500">담당자</p>
-          <p className="text-slate-700 font-medium">{ticket.assignee}</p>
+          <p className="text-slate-700 font-medium">{ticket.assigned_to}</p>
         </div>
         <div>
           <p className="text-sm text-slate-500">생성일</p>
-          <p className="text-slate-700 font-medium">{ticket.created}</p>
+          <p className="text-slate-700 font-medium">
+            {new Date(ticket.created_at).toLocaleDateString()}
+          </p>
         </div>
       </div>
 
@@ -101,7 +104,7 @@ export default function TicketDetailPage() {
         </div>
       </div>
 
-      {/* 수정 모달 */}
+      {/* ✏️ 수정 모달 */}
       {isEditOpen && (
         <EditModal
           ticket={ticket}
@@ -116,7 +119,7 @@ export default function TicketDetailPage() {
   );
 }
 
-/* ----------------- 모달 컴포넌트 ----------------- */
+/* ----------------- 수정 모달 ----------------- */
 function EditModal({
   ticket,
   onClose,
@@ -128,9 +131,20 @@ function EditModal({
 }) {
   const [form, setForm] = useState(ticket);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: any) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  // 🔥 PUT API 호출
+  const handleSave = async () => {
+    try {
+      const res = await api.put(`/tickets/${ticket.id}`, form);
+      onSave(res.data);
+    } catch (err) {
+      console.error(err);
+      alert("수정 중 오류 발생");
+    }
   };
 
   return (
@@ -179,8 +193,8 @@ function EditModal({
 
           <label className="text-sm text-slate-600">담당자</label>
           <input
-            name="assignee"
-            value={form.assignee}
+            name="assigned_to"
+            value={form.assigned_to || ""}
             onChange={handleChange}
             className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
@@ -189,56 +203,21 @@ function EditModal({
           <textarea
             name="description"
             value={form.description}
-            onChange={handleChange}
             rows={4}
+            onChange={handleChange}
             className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
           />
         </div>
 
         <div className="flex justify-end gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm rounded-md border text-slate-600 hover:bg-gray-50"
-          >
+          <button onClick={onClose} className="px-4 py-2 text-sm rounded-md border text-slate-600 hover:bg-gray-50">
             취소
           </button>
-          <button
-            onClick={() => onSave(form)}
-            className="px-4 py-2 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
-          >
+          <button onClick={handleSave} className="px-4 py-2 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700">
             저장
           </button>
         </div>
       </div>
     </div>
-  );
-}
-
-/* ----------------- 뱃지 ----------------- */
-function StatusBadge({ status }: { status: string }) {
-  const colorMap: Record<string, string> = {
-    열림: "bg-blue-100 text-blue-700",
-    진행중: "bg-yellow-100 text-yellow-700",
-    해결됨: "bg-green-100 text-green-700",
-    종료: "bg-gray-200 text-gray-700",
-  };
-  return (
-    <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-medium ${colorMap[status] || ""}`}>
-      {status}
-    </span>
-  );
-}
-
-function PriorityBadge({ priority }: { priority: string }) {
-  const colorMap: Record<string, string> = {
-    긴급: "bg-red-100 text-red-700",
-    높음: "bg-orange-100 text-orange-700",
-    보통: "bg-green-100 text-green-700",
-    낮음: "bg-gray-200 text-gray-700",
-  };
-  return (
-    <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-medium ${colorMap[priority] || ""}`}>
-      {priority}
-    </span>
   );
 }
