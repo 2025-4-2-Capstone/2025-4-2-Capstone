@@ -7,6 +7,42 @@ import {
 } from "recharts";
 import { GaugeChart } from "@/components/charts/GaugeChart";
 
+// ✅ SupersetEmbed 통합 (자동 JWT 토큰 발급 + env ID 사용)
+function SupersetEmbed() {
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const role = localStorage.getItem("role");
+
+    // FastAPI에서 Superset JWT 요청
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/superset/token?role=${role}`)
+      .then((res) => res.json())
+      .then((data) => setToken(data.token))
+      .catch((err) => console.error("Superset JWT 요청 실패:", err));
+  }, []);
+
+  if (!token) {
+    return (
+      <div className="flex justify-center items-center h-[600px] text-slate-500">
+        Superset 대시보드를 불러오는 중...
+      </div>
+    );
+  }
+
+  // ✅ env에서 대시보드 ID 불러오기
+  const dashboardId = process.env.NEXT_PUBLIC_SUPERSET_DASHBOARD_ADMIN!;
+  const supersetUrl = `http://localhost:8088/superset/dashboard/p/${dashboardId}/?token=${token}`;
+
+  return (
+    <iframe
+      src={supersetUrl}
+      width="100%"
+      height="700"
+      className="rounded-lg border border-gray-200 shadow"
+    />
+  );
+}
+
 export default function AdminDashboard() {
   const [username, setUsername] = useState("");
 
@@ -33,9 +69,7 @@ export default function AdminDashboard() {
     <div className="flex flex-col gap-8 min-h-screen bg-gray-50 px-8 py-6">
       {/* Header */}
       <header className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-indigo-700">
-          관리자 대시보드
-        </h1>
+        <h1 className="text-2xl font-bold text-indigo-700">관리자 대시보드</h1>
         <p className="text-gray-600">
           {username ? `${username}님, 환영합니다 👋` : "Loading..."}
         </p>
@@ -52,7 +86,9 @@ export default function AdminDashboard() {
       {/* Charts */}
       <section className="grid grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl shadow p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold mb-4 text-slate-800">SLA 응답·해결 지연 추이</h3>
+          <h3 className="text-lg font-semibold mb-4 text-slate-800">
+            SLA 응답·해결 지연 추이
+          </h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={slaData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -60,14 +96,26 @@ export default function AdminDashboard() {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="응답지연" stroke="#4F46E5" strokeWidth={2} />
-              <Line type="monotone" dataKey="해결지연" stroke="#10B981" strokeWidth={2} />
+              <Line
+                type="monotone"
+                dataKey="응답지연"
+                stroke="#4F46E5"
+                strokeWidth={2}
+              />
+              <Line
+                type="monotone"
+                dataKey="해결지연"
+                stroke="#10B981"
+                strokeWidth={2}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
         <div className="bg-white rounded-2xl shadow p-6 border border-gray-100 flex flex-col justify-between">
-          <h3 className="text-lg font-semibold mb-4 text-slate-800">상태별 티켓 비율</h3>
+          <h3 className="text-lg font-semibold mb-4 text-slate-800">
+            상태별 티켓 비율
+          </h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={statusData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -97,17 +145,10 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      {/* Superset 임베드 자리 (추후 연결) */}
+      {/* ✅ Superset 임베드 자동 연동 */}
       <section className="bg-white rounded-2xl shadow p-6 border border-gray-100">
         <h3 className="text-lg font-semibold mb-4 text-slate-800">Superset 대시보드</h3>
-        <div className="border rounded-lg overflow-hidden">
-          <iframe
-            src="http://localhost:8088/superset/dashboard/p/<YOUR_EMBED_ID>/?token=<YOUR_JWT>"
-            width="100%"
-            height="700"
-            className="rounded-lg"
-          />
-        </div>
+        <SupersetEmbed />
       </section>
     </div>
   );
