@@ -1,25 +1,35 @@
+"use client";
+
 import { create } from "zustand";
 
 interface UserState {
   token: string | null;
-  role: string | null;
   username: string | null;
-
-  setToken: (token: string | null) => void;
-  setRole: (role: string | null) => void;
-  setUsername: (username: string | null) => void;
-
+  role: string | null;
+  department_id: number | null;
+  login: (data: any) => void;
   logout: () => void;
 }
 
 export const useUserStore = create<UserState>((set) => ({
   token: null,
-  role: null,
   username: null,
+  role: null,
+  department_id: null,
 
-  setToken: (token) => set({ token }),
-  setRole: (role) => set({ role }),
-  setUsername: (username) => set({ username }),
+  login: (data) =>
+    set(() => ({
+      token: data.access_token,
+      username: data.username,
+      role: data.role,
+      department_id: data.department_id,
+    })),
 
-  logout: () => set({ token: null, role: null, username: null }),
+  logout: () =>
+    set(() => ({
+      token: null,
+      username: null,
+      role: null,
+      department_id: null,
+    })),
 }));
