@@ -1,40 +1,39 @@
 "use client";
 
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import React from "react";
+import { PieChart, Pie, Cell } from "recharts";
 
-interface GaugeChartProps {
-  value: number;
-  max?: number;
-}
-
-export function GaugeChart({ value, max = 100 }: GaugeChartProps) {
-  const percentage = Math.min(value / max, 1);
+export function GaugeChart({ value, max }: { value: number; max: number }) {
+  const percentage = (value / max) * 100;
   const data = [
-    { name: "value", value: percentage * 100 },
-    { name: "remain", value: 100 - percentage * 100 },
+    { value: percentage },
+    { value: 100 - percentage },
   ];
-
-  const COLORS = ["#4F46E5", "#E5E7EB"]; // Indigo + Gray
+  const COLORS = ["#4F46E5", "#E5E7EB"];
 
   return (
-    <div className="bg-white rounded-2xl flex items-center justify-center"> {/* ✅ 배경 흰색 지정 */}
-      <ResponsiveContainer width={120} height={120}>
-        <PieChart>
-          <Pie
-            data={data}
-            startAngle={180}
-            endAngle={0}
-            innerRadius={45}
-            outerRadius={60}
-            paddingAngle={0}
-            dataKey="value"
-          >
-            {data.map((_, index) => (
-              <Cell key={index} fill={COLORS[index]} />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
+    <PieChart width={150} height={150}>
+      <Pie
+        data={data}
+        startAngle={180}
+        endAngle={0}
+        innerRadius={50}
+        outerRadius={70}
+        dataKey="value"
+      >
+        {data.map((entry, index) => (
+          <Cell key={`cell-${index}`} fill={COLORS[index]} />
+        ))}
+      </Pie>
+      <text
+        x={75}
+        y={90}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        className="text-lg font-semibold fill-slate-800"
+      >
+        {`${Math.round(percentage)}%`}
+      </text>
+    </PieChart>
   );
 }
