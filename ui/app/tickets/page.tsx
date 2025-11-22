@@ -16,18 +16,32 @@ export default function TicketsPage() {
 
   // 🔥 실제 API에서 티켓 불러오기
   useEffect(() => {
-    async function fetchTickets() {
-      try {
-        const res = await api.get("/tickets");
-        setTickets(res.data);
-      } catch (err) {
-        console.error("티켓 불러오기 실패:", err);
-      } finally {
-        setLoading(false);
+  async function fetchTickets() {
+    try {
+      const res = await api.get("/tickets");
+      const data = res.data;
+
+      // 🚀 응답 구조를 안전하게 배열로 변환
+      if (Array.isArray(data)) {
+        setTickets(data);
+      } else if (Array.isArray(data.tickets)) {
+        setTickets(data.tickets);
+      } else if (Array.isArray(data.data)) {
+        setTickets(data.data);
+      } else {
+        console.error("알 수 없는 티켓 데이터 구조:", data);
+        setTickets([]);
       }
+
+    } catch (err) {
+      console.error("티켓 불러오기 실패:", err);
+    } finally {
+      setLoading(false);
     }
-    fetchTickets();
-  }, []);
+  }
+  fetchTickets();
+}, []);
+
 
   if (loading) {
     return (
