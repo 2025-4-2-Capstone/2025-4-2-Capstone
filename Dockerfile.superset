@@ -1,37 +1,22 @@
-# ----------------------------------------
-# Dockerfile.superset
-# Superset + flask-cors 설치 + 로컬 config 적용
-# ----------------------------------------
-
 FROM apache/superset:latest
 
-# root 권한으로 패키지 설치
 USER root
 
-# 시스템 필수 패키지 설치
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        build-essential \
-        libpq-dev \
-        gcc \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# 필수 시스템 패키지 설치
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libpq-dev gcc \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Superset 가상환경(.venv)에서 Python 패키지 설치
-RUN /bin/bash -c "/app/.venv/bin/pip install --no-cache-dir \
-        flask-cors \
-        psycopg2-binary \
-        sqlalchemy \
-        sqlalchemy-utils"
+# ⚠️ Superset .venv 활성화 후 flask-cors 설치
+RUN . /app/.venv/bin/activate \
+ && pip install --no-cache-dir flask-cors==3.0.10 \
+ && pip install --no-cache-dir psycopg2-binary sqlalchemy sqlalchemy-utils
 
-# 다시 superset 유저로 전환
+# 다시 superset 유저로 변경
 USER superset
 
-# 로컬 superset_config.py 복사
+# 로컬 config 복사
 COPY superset_config.py /app/pythonpath/superset_config.py
-
-# PYTHONPATH 환경변수 설정 (superset_config.py 인식)
 ENV PYTHONPATH="/app/pythonpath:${PYTHONPATH}"
 
-# 기본 포트
 EXPOSE 8088

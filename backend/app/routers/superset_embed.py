@@ -3,52 +3,65 @@ from pydantic import BaseModel
 import jwt, time
 
 router = APIRouter(prefix="/embed", tags=["Superset Embed"])
-
-# ⚠️ Superset GUEST_TOKEN_JWT_SECRET과 동일해야 함
 SUPERSET_SECRET_KEY = "H3s02Kdf9sKfd3pSkwo39lskfds0lsdf39023ks=="
 
-# 역할별 대시보드 UUID 매핑 (고정)
 ROLE_DASHBOARDS = {
-    "super_admin": "abc123xyz",
-    "admin": "13816037-2392-4cb8-848b-d63c2e81d797",  # 고정 UUID
-    "manager": "dept456def",
-    "engineer": "eng789ghi",
-    "user": "usr111aaa",
-    "staff": "usr111aaa",
-    "auditor": "adt222bbb",
+    "admin": "5faa52f0-f0b1-44d2-8c13-62645fba4a1d",
+    "auditor": "561eca0f-5e48-4a1e-acea-e844092f8f84",
+    "engineer": "b035582c-352a-4d81-b905-40db9eeb5882",
+    "manager": "c13dbc21-e87f-4e27-928a-0fcaa66854dd",
+    "user": "ba851113-5ee5-41d8-9c12-e3776d2dfd08",
+    "staff": "ba851113-5ee5-41d8-9c12-e3776d2dfd08",
 }
 
-# 요청 모델 (username, role 항상 admin)
 class TokenRequest(BaseModel):
-    username: str = "admin"
-    role: str = "admin"
+    username: str
+    role: str
 
 @router.post("/token")
 def create_embed_token(req: TokenRequest):
-    # username, role 무조건 admin
-    username = "admin"
-    role = "admin"
+    username = "admin"  # 항상 admin
+    role = req.role
 
-    # 역할에 해당하는 대시보드 UUID
     dashboard_id = ROLE_DASHBOARDS.get(role)
     if not dashboard_id:
         return {"error": "Invalid role"}
 
-    # JWT 페이로드
+    now = int(time.time())
+
     payload = {
-        "user": {"username": username, "first_name": "Admin", "last_name": "User"},
-        "resources": [{"type": "dashboard", "id": dashboard_id}],
+        # ===================================
+        # Superset 필수 구조 (절대 삭제 X)
+        # ===================================
+        "user": {
+            "username": username,
+            "first_name": "",
+            "last_name": ""
+        },
+        "resources": [
+            {"type": "dashboard", "id": dashboard_id}
+        ],
         "rls_rules": [],
-        "iat": int(time.time()),
-        "exp": int(time.time()) + 600,  # 10분 유효
-        "aud": "superset",             # superset_config.py GUEST_TOKEN_JWT_AUDIENCE와 일치
-        "type": "guest"
+        "aud": "superset",
+        "type": "guest",
+
+        # ===================================
+        # 너가 원하는 커스텀 필드 (Superset은 무시함)
+        # ===================================
+        "role": role,
+        "dashboard": dashboard_id,
+
+        # ===================================
+        # Meta
+        # ===================================
+        "iat": now,
+        "exp": now + 600,
     }
 
-    # 토큰 생성
     token = jwt.encode(payload, SUPERSET_SECRET_KEY, algorithm="HS256")
 
     return {
         "token": token,
+        "dashboard": dashboard_id,
         "embed_url": f"http://localhost:8088/embedded/{dashboard_id}?token={token}"
     }

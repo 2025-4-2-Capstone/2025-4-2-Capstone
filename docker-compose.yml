@@ -50,6 +50,7 @@ services:
       - .env
     volumes:
       - superset_data:/app/superset_home
+      - ./superset_config.py:/app/superset_config.py
     command: >
       /bin/bash -c "
         superset db upgrade &&
