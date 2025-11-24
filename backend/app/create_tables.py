@@ -1,27 +1,29 @@
 from sqlalchemy import create_engine, text
 from app import models
-import bcrypt
+from passlib.context import CryptContext
 import os
 from dotenv import load_dotenv
 
-# ================================
-# 1) .env 로드 및 DB URL 설정
-# ================================
 load_dotenv()
 
-# ⛔ OneDrive 환경에서 env 꼬임 방지: 강제 override
-os.environ["DATABASE_URL"] = "postgresql://app:app_pw@localhost:5432/appdb"
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("❌ DATABASE_URL이 .env에 없습니다!")
 
-DATABASE_URL = os.environ["DATABASE_URL"]
 engine = create_engine(DATABASE_URL)
+
+# bcrypt 제거 → sha256_crypt 사용
+pwd_context = CryptContext(
+    schemes=["sha256_crypt"],
+    deprecated="auto"
+)
 
 print("📌 Using DB:", DATABASE_URL)
 
-
 # ================================
-# 2) CASCADE 초기화 (뷰/테이블 전부 삭제)
+# SCHEMA RESET
 # ================================
-print("⚠️ Dropping SCHEMA public CASCADE...")
+print("⚠️ Dropping public schema...")
 with engine.connect() as conn:
     conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE;"))
     conn.execute(text("CREATE SCHEMA public;"))
@@ -29,20 +31,19 @@ print("🔄 SCHEMA recreated!")
 
 
 # ================================
-# 3) 모든 테이블 재생성
+# CREATE TABLES
 # ================================
-print("⏳ Creating tables from models.py...")
+print("⏳ Creating tables...")
 models.Base.metadata.create_all(bind=engine)
-print("✅ Tables created successfully!")
+print("✅ Tables created!")
 
 
 # ================================
-# 4) 기본 데이터 삽입 (Roles, Departments, SLA)
+# Insert Base Data
 # ================================
 print("⏳ Inserting base data...")
 
 with engine.begin() as conn:
-    # Roles
     conn.execute(text("""
         INSERT INTO roles (id, name, hierarchy_level, description)
         VALUES
@@ -56,7 +57,6 @@ with engine.begin() as conn:
         ON CONFLICT (id) DO NOTHING;
     """))
 
-    # Departments
     conn.execute(text("""
         INSERT INTO departments (id, name)
         VALUES
@@ -70,7 +70,6 @@ with engine.begin() as conn:
         ON CONFLICT (id) DO NOTHING;
     """))
 
-    # SLA Policies
     conn.execute(text("""
         INSERT INTO sla_policies (id, priority, response_time_days, resolve_time_days)
         VALUES
@@ -85,24 +84,22 @@ print("✅ 기본 데이터 삽입 완료!")
 
 
 # ================================
-# 5) super admin 계정 자동 생성
+# SUPER ADMIN 생성
 # ================================
-print("⏳ Creating Super Admin account...")
+print("⏳ Creating super admin user...")
 
-plain_pw = "capstone42"
-hashed_pw = bcrypt.hashpw(plain_pw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+hashed_pw = pwd_context.hash("capstone42")
 
 with engine.begin() as conn:
-    conn.execute(text(f"""
+    conn.execute(text("""
         INSERT INTO users (username, email, password_hash, role_id, department_id, is_active)
-        VALUES ('capstone', 'capstone42@kunsan.com', '{hashed_pw}', 1, 1, TRUE)
+        VALUES ('capstone', 'capstone42@kunsan.com', :pw, 1, 1, TRUE)
         ON CONFLICT (username) DO NOTHING;
-    """))
+    """), {"pw": hashed_pw})
 
 print("🎉 Super Admin 생성 완료!")
-print("    ➤ username: capstone")
-print("    ➤ password: capstone42")
-print("    ➤ role: super_admin")
+print("   ➤ username: capstone")
+print("   ➤ password: capstone42")
 print("====================================================")
-print("🔥 DB가 완전히 초기화되고 기본 데이터가 준비되었습니다!")
+print("🔥 DB 초기화 + Super Admin 생성 완료!")
 print("====================================================")
