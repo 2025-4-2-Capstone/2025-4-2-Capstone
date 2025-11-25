@@ -7,7 +7,6 @@ interface Props {
   role: string;
 }
 
-// .env.local 환경변수 기반으로 매핑
 const ROLE_DASHBOARDS: Record<string, string> = {
   admin: process.env.NEXT_PUBLIC_DASHBOARD_ADMIN!,
   auditor: process.env.NEXT_PUBLIC_DASHBOARD_AUDITOR!,
@@ -21,12 +20,8 @@ export default function SupersetEmbed({ role }: Props) {
   useEffect(() => {
     const timer = setTimeout(async () => {
       const mountPoint = document.getElementById("superset-container");
-      if (!mountPoint) {
-        console.error("❌ superset-container 찾기 실패");
-        return;
-      }
+      if (!mountPoint) return;
 
-      // role에 맞는 Dashboard UUID 가져오기
       const dashboardId = ROLE_DASHBOARDS[role] || ROLE_DASHBOARDS["user"];
 
       try {
@@ -36,47 +31,52 @@ export default function SupersetEmbed({ role }: Props) {
           mountPoint,
 
           fetchGuestToken: async () => {
-            const res = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL}/embed/token`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  username: "admin",
-                  role: role,
-                }),
-              }
-            );
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/embed/token`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                username: "admin",
+                role: role,
+              }),
+            });
 
             const data = await res.json();
-            if (!data.token) {
-              console.error("❌ Guest Token 없음:", data);
-              throw new Error("Superset Guest Token 에러");
-            }
-
+            if (!data.token) throw new Error("Guest Token Error");
             return data.token;
           },
 
-          iframeSandboxExtras: [
-            "allow-forms",
-            "allow-same-origin",
-            "allow-scripts",
-          ],
+          iframeSandboxExtras: ["allow-forms", "allow-same-origin", "allow-scripts"],
 
           dashboardUiConfig: {
             hideTitle: true,
+            hideChartControls: false,
             filters: { expanded: true },
           },
         });
+
+        // 🔥 Superset이 생성한 iframe 강제 스타일링
+        const iframe = mountPoint.querySelector("iframe") as HTMLIFrameElement;
+        if (iframe) {
+          iframe.style.width = "100%";
+          iframe.style.height = "1200px";  // 🔥 여기서 높이 조절
+          iframe.style.minHeight = "1000px";
+        }
       } catch (err) {
-        console.error("❌ Superset 임베딩 실패:", err);
+        console.error("❌ Superset Embed Error:", err);
       }
-    }, 80);
+    }, 100);
 
     return () => clearTimeout(timer);
   }, [role]);
 
   return (
-    <div id="superset-container" style={{ width: "100%", height: "900px" }} />
+    <div
+      id="superset-container"
+      className="w-full"
+      style={{
+        height: "auto",
+        minHeight: "1200px",
+      }}
+    />
   );
 }
