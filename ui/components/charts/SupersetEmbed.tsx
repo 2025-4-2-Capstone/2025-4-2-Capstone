@@ -1,40 +1,82 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { embedDashboard } from "@superset-ui/embedded-sdk";
 
-interface SupersetEmbedProps {
-  dashboardId: string;
+interface Props {
+  role: string;
 }
 
-export default function SupersetEmbed({ dashboardId }: SupersetEmbedProps) {
-  const [token, setToken] = useState<string | null>(null);
+// .env.local 환경변수 기반으로 매핑
+const ROLE_DASHBOARDS: Record<string, string> = {
+  admin: process.env.NEXT_PUBLIC_DASHBOARD_ADMIN!,
+  auditor: process.env.NEXT_PUBLIC_DASHBOARD_AUDITOR!,
+  engineer: process.env.NEXT_PUBLIC_DASHBOARD_ENGINEER!,
+  manager: process.env.NEXT_PUBLIC_DASHBOARD_MANAGER!,
+  user: process.env.NEXT_PUBLIC_DASHBOARD_USER!,
+  staff: process.env.NEXT_PUBLIC_DASHBOARD_STAFF!,
+};
 
+export default function SupersetEmbed({ role }: Props) {
   useEffect(() => {
-    const role = localStorage.getItem("role");
+    const timer = setTimeout(async () => {
+      const mountPoint = document.getElementById("superset-container");
+      if (!mountPoint) {
+        console.error("❌ superset-container 찾기 실패");
+        return;
+      }
 
-    // ✅ FastAPI에서 Superset용 JWT 요청
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/superset/token?role=${role}`)
-      .then((res) => res.json())
-      .then((data) => setToken(data.token))
-      .catch((err) => console.error("JWT 요청 실패:", err));
-  }, []);
+      // role에 맞는 Dashboard UUID 가져오기
+      const dashboardId = ROLE_DASHBOARDS[role] || ROLE_DASHBOARDS["user"];
 
-  if (!token) {
-    return (
-      <div className="flex justify-center items-center h-[700px] text-slate-500">
-        Superset 대시보드를 불러오는 중...
-      </div>
-    );
-  }
+      try {
+        await embedDashboard({
+          id: dashboardId,
+          supersetDomain: process.env.NEXT_PUBLIC_SUPERSET_URL!,
+          mountPoint,
 
-  const embedUrl = `http://localhost:8088/superset/dashboard/p/${dashboardId}/?token=${token}`;
+          fetchGuestToken: async () => {
+            const res = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/embed/token`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  username: "admin",
+                  role: role,
+                }),
+              }
+            );
+
+            const data = await res.json();
+            if (!data.token) {
+              console.error("❌ Guest Token 없음:", data);
+              throw new Error("Superset Guest Token 에러");
+            }
+
+            return data.token;
+          },
+
+          iframeSandboxExtras: [
+            "allow-forms",
+            "allow-same-origin",
+            "allow-scripts",
+          ],
+
+          dashboardUiConfig: {
+            hideTitle: true,
+            filters: { expanded: true },
+          },
+        });
+      } catch (err) {
+        console.error("❌ Superset 임베딩 실패:", err);
+      }
+    }, 80);
+
+    return () => clearTimeout(timer);
+  }, [role]);
 
   return (
-    <iframe
-      src={embedUrl}
-      width="100%"
-      height="800"
-      className="rounded-xl border border-gray-200 shadow-sm"
-    />
+    <div id="superset-container" style={{ width: "100%", height: "900px" }} />
   );
 }

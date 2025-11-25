@@ -6,42 +6,7 @@ import {
   CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer
 } from "recharts";
 import { GaugeChart } from "@/components/charts/GaugeChart";
-
-// ✅ SupersetEmbed 통합 (자동 JWT 토큰 발급 + env ID 사용)
-function SupersetEmbed() {
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    const role = localStorage.getItem("role");
-
-    // FastAPI에서 Superset JWT 요청
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/superset/token?role=${role}`)
-      .then((res) => res.json())
-      .then((data) => setToken(data.token))
-      .catch((err) => console.error("Superset JWT 요청 실패:", err));
-  }, []);
-
-  if (!token) {
-    return (
-      <div className="flex justify-center items-center h-[600px] text-slate-500">
-        Superset 대시보드를 불러오는 중...
-      </div>
-    );
-  }
-
-  // ✅ env에서 대시보드 ID 불러오기
-  const dashboardId = process.env.NEXT_PUBLIC_SUPERSET_DASHBOARD_ADMIN!;
-  const supersetUrl = `http://localhost:8088/superset/dashboard/p/${dashboardId}/?token=${token}`;
-
-  return (
-    <iframe
-      src={supersetUrl}
-      width="100%"
-      height="700"
-      className="rounded-lg border border-gray-200 shadow"
-    />
-  );
-}
+import SupersetEmbed from "@/components/charts/SupersetEmbed";
 
 export default function AdminDashboard() {
   const [username, setUsername] = useState("");
@@ -67,6 +32,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex flex-col gap-8 min-h-screen bg-gray-50 px-8 py-6">
+
       {/* Header */}
       <header className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold text-indigo-700">관리자 대시보드</h1>
@@ -83,7 +49,7 @@ export default function AdminDashboard() {
         <KpiCard title="SLA 위반 비율" value="12%" />
       </section>
 
-      {/* Charts */}
+      {/* 기존 Recharts 그래프 */}
       <section className="grid grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl shadow p-6 border border-gray-100">
           <h3 className="text-lg font-semibold mb-4 text-slate-800">
@@ -96,18 +62,8 @@ export default function AdminDashboard() {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line
-                type="monotone"
-                dataKey="응답지연"
-                stroke="#4F46E5"
-                strokeWidth={2}
-              />
-              <Line
-                type="monotone"
-                dataKey="해결지연"
-                stroke="#10B981"
-                strokeWidth={2}
-              />
+              <Line type="monotone" dataKey="응답지연" stroke="#4F46E5" strokeWidth={2} />
+              <Line type="monotone" dataKey="해결지연" stroke="#10B981" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -145,11 +101,16 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      {/* ✅ Superset 임베드 자동 연동 */}
+      {/* 🟦 Superset 대시보드 전체 임베드 */}
       <section className="bg-white rounded-2xl shadow p-6 border border-gray-100">
-        <h3 className="text-lg font-semibold mb-4 text-slate-800">Superset 대시보드</h3>
-        <SupersetEmbed />
+        <h3 className="text-lg font-semibold mb-4 text-slate-800">
+          관리자용 Superset 대시보드
+        </h3>
+        
+        {/* ⬇⬇ 여기 role 전달이 핵심! */}
+        <SupersetEmbed role="admin" />
       </section>
+
     </div>
   );
 }
