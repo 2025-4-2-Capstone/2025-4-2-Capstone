@@ -110,7 +110,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Input Fields – 디자인 유지 + 기능만 추가됨 */}
+          {/* Input Fields – 디자인 유지 + 기능 추가 + 글자색 수정 */}
           <div className="flex flex-col gap-4">
             <input
               type="text"
@@ -118,7 +118,7 @@ export default function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               onKeyDown={handleKeyPress}
-              className="border rounded-lg px-4 py-3 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              className="border rounded-lg px-4 py-3 shadow-sm transition text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
             />
             <input
               type="password"
@@ -126,7 +126,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={handleKeyPress}
-              className="border rounded-lg px-4 py-3 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              className="border rounded-lg px-4 py-3 shadow-sm transition text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
             />
           </div>
 
