@@ -22,48 +22,106 @@ export default function Sidebar() {
     if (storedRole) setRole(storedRole);
   }, []);
 
-  // ✅ 직급별 메뉴 분류
+  /*-----------------------------------------------------
+    역할별 메뉴 구성 (티켓 메뉴 전면 재정리 + 기존 메뉴 유지)
+  -----------------------------------------------------*/
+
   const menuByRole: Record<
     string,
     { icon: React.ElementType; path: string; tooltip: string }[]
   > = {
+    /* =====================
+       SUPER ADMIN
+    ====================== */
     super_admin: [
       { icon: BarChart3, path: "/dashboard/admin", tooltip: "대시보드" },
-      { icon: Ticket, path: "/tickets", tooltip: "티켓 관리" },
+
+      // 티켓 관련
+      { icon: Ticket, path: "/tickets", tooltip: "전체 티켓" },
+      { icon: Ticket, path: "/tickets/unassigned", tooltip: "미할당 티켓" },
+      { icon: Ticket, path: "/tickets/my", tooltip: "내 티켓" },
+      { icon: FileText, path: "/tickets/new", tooltip: "티켓 생성" },
+
+      // 관리 기능
       { icon: Users, path: "/users", tooltip: "사용자 관리" },
       { icon: Shield, path: "/audit", tooltip: "감사 로그" },
       { icon: Settings, path: "/settings", tooltip: "시스템 설정" },
     ],
+
+    /* =====================
+       ADMIN
+    ====================== */
     admin: [
       { icon: BarChart3, path: "/dashboard/admin", tooltip: "대시보드" },
-      { icon: Ticket, path: "/tickets", tooltip: "티켓 관리" },
+
+      // 티켓 관련
+      { icon: Ticket, path: "/tickets", tooltip: "전체 티켓" },
+      { icon: Ticket, path: "/tickets/unassigned", tooltip: "미할당 티켓" },
+      { icon: Ticket, path: "/tickets/my", tooltip: "내 티켓" },
+      { icon: FileText, path: "/tickets/new", tooltip: "티켓 생성" },
+
+      // 관리 기능
       { icon: Bell, path: "/sla", tooltip: "SLA 정책" },
       { icon: Users, path: "/users", tooltip: "사용자 관리" },
       { icon: Shield, path: "/audit", tooltip: "감사 로그" },
     ],
+
+    /* =====================
+       MANAGER
+    ====================== */
     manager: [
       { icon: BarChart3, path: "/dashboard/manager", tooltip: "부서 대시보드" },
+
+      // 티켓 관련
       { icon: Ticket, path: "/tickets/department", tooltip: "부서 티켓" },
+      { icon: Ticket, path: "/tickets/unassigned", tooltip: "미할당 티켓" },
+      { icon: Ticket, path: "/tickets/my", tooltip: "내 티켓" },
+
+      // 기타
       { icon: Bell, path: "/sla/department", tooltip: "SLA 상태" },
       { icon: Users, path: "/users/team", tooltip: "팀원 관리" },
     ],
+
+    /* =====================
+       ENGINEER
+    ====================== */
     engineer: [
       { icon: BarChart3, path: "/dashboard/engineer", tooltip: "내 대시보드" },
+
+      // 티켓 관련
       { icon: Ticket, path: "/tickets/my", tooltip: "내 티켓" },
+      { icon: Ticket, path: "/tickets/assigned", tooltip: "할당된 티켓" },
+
       { icon: Bell, path: "/sla/alerts", tooltip: "SLA 경고" },
     ],
+
+    /* =====================
+       SUPPORT
+    ====================== */
     support: [
       { icon: BarChart3, path: "/dashboard/support", tooltip: "지원 대시보드" },
       { icon: Ticket, path: "/tickets/my", tooltip: "내 티켓" },
     ],
+
+    /* =====================
+       STAFF (일반 직원)
+    ====================== */
     staff: [
       { icon: BarChart3, path: "/dashboard/staff", tooltip: "내 업무" },
       { icon: Ticket, path: "/tickets/my", tooltip: "내 티켓" },
     ],
+
+    /* =====================
+       USER (고객 / 사내 일반 사용자)
+    ====================== */
     user: [
       { icon: Ticket, path: "/tickets/my", tooltip: "내 티켓" },
       { icon: FileText, path: "/tickets/new", tooltip: "문의하기" },
     ],
+
+    /* =====================
+       AUDITOR (감사)
+    ====================== */
     auditor: [
       { icon: BarChart3, path: "/dashboard/auditor", tooltip: "감사 대시보드" },
       { icon: Shield, path: "/audit", tooltip: "감사 로그" },
@@ -71,7 +129,7 @@ export default function Sidebar() {
     ],
   };
 
-  // 기본값: user로 처리
+  // 기본 fallback: user
   const menus = menuByRole[role] || menuByRole["user"];
 
   return (
@@ -79,7 +137,7 @@ export default function Sidebar() {
       {/* 로고 영역 */}
       <div className="text-lg font-bold mb-4 text-slate-800">KDN</div>
 
-      {/* 네비게이션 메뉴 */}
+      {/* 네비게이션 */}
       <nav className="flex flex-col items-center space-y-8">
         {menus.map((menu, idx) => {
           const Icon = menu.icon;
