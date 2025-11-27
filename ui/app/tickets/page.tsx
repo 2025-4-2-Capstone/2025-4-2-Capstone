@@ -6,15 +6,23 @@ import TicketFilterBar from "@/components/tickets/TicketFilterBar";
 
 export default function TicketsPage() {
   return (
-    <div className="p-6 space-y-6">
-      {/* 제목 */}
-      <h1 className="text-2xl font-semibold">티켓 전체 목록</h1>
+    <div className="flex flex-col gap-6 min-h-screen bg-gray-50 px-8 py-6">
 
-      {/* 필터바 */}
-      <TicketFilterBar />
+      {/* 페이지 제목 */}
+      <header className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-800">티켓 전체 목록</h1>
+      </header>
+
+      {/* 검색 & 필터 카드 */}
+      <section className="bg-white rounded-2xl shadow border border-gray-100 p-4">
+        <TicketFilterBar />
+      </section>
 
       {/* 티켓 리스트 */}
-      <TicketList />
+      <section className="bg-white rounded-2xl shadow border border-gray-100 p-4">
+        <TicketList />
+      </section>
+
     </div>
   );
 }
