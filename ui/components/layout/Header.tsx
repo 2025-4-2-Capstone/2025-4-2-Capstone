@@ -32,7 +32,7 @@ export default function Header() {
   // ✅ 로그아웃 처리
   const handleLogout = () => {
     localStorage.clear();
-    router.push("/login");
+    router.push("/auth/login");
   };
 
   return (
