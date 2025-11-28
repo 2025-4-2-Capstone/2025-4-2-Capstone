@@ -21,10 +21,19 @@ export default function NewTicketPage() {
     try {
       setLoading(true);
 
+      // 🔥 UI → 백엔드 priority 매핑
+      const priorityMap: Record<string, string> = {
+        LOW: "low",
+        MEDIUM: "normal",
+        HIGH: "high",
+        CRITICAL: "urgent",
+      };
+
       const form = {
         title,
         description,
-        priority,
+        priority: priorityMap[priority], // ← 변환 필수
+        assigned_to: null,               // ← 반드시 포함해야 422 안 남
       };
 
       await createTicket(form);

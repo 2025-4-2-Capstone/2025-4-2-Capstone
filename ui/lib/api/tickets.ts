@@ -18,31 +18,7 @@ export const getTicketById = async (ticketId: string | number) => {
 };
 
 /* ===========================
-   3) 내 티켓
-=========================== */
-export const getMyTickets = async () => {
-  const res = await api.get("/tickets/my");
-  return res.data;
-};
-
-/* ===========================
-   4) 나에게 할당된 티켓
-=========================== */
-export const getAssignedTickets = async () => {
-  const res = await api.get("/tickets/assigned");
-  return res.data;
-};
-
-/* ===========================
-   5) 미할당 티켓
-=========================== */
-export const getUnassignedTickets = async () => {
-  const res = await api.get("/tickets/unassigned");
-  return res.data;
-};
-
-/* ===========================
-   6) 티켓 생성
+   3) 티켓 생성
 =========================== */
 export const createTicket = async (form: any) => {
   const res = await api.post("/tickets", form);
@@ -50,33 +26,32 @@ export const createTicket = async (form: any) => {
 };
 
 /* ===========================
-   7) 티켓 상태 변경
+   4) 티켓 상태 변경 (백엔드와 맞춘 버전)
 =========================== */
 export const updateTicketStatus = async (ticketId: number, status: string) => {
-  const res = await api.post(`/tickets/${ticketId}/status`, { status });
+  const res = await api.put(`/tickets/${ticketId}`, { status });
   return res.data;
 };
 
 /* ===========================
-   8) 티켓 담당자 할당
+   5) 담당자 변경 (백엔드에는 없음 → UI에서 막기)
 =========================== */
-export const assignTicket = async (ticketId: number, assignee: string) => {
-  const res = await api.post(`/tickets/${ticketId}/assign`, { assignee });
-  return res.data;
+// ❌ 백엔드에 /assign API 없음 → 호출 불가
+// 필요한 경우 백엔드에 기능 추가해야 함
+export const assignTicket = async () => {
+  alert("담당자 지정 기능은 아직 백엔드에 구현되어 있지 않습니다.");
 };
 
 /* ===========================
-   9) 댓글 추가
+   6) 댓글 추가 (백엔드에는 없음 → UI에서 막기)
 =========================== */
-export const addComment = async (ticketId: number, message: string) => {
-  const res = await api.post(`/tickets/${ticketId}/comment`, { message });
-  return res.data;
+export const addComment = async () => {
+  alert("댓글 기능은 아직 백엔드에 구현되어 있지 않습니다.");
 };
 
 /* ===========================
-   10) 히스토리 가져오기
+   7) 히스토리 조회 (백엔드 없음)
 =========================== */
-export const getTicketHistory = async (ticketId: number) => {
-  const res = await api.get(`/tickets/${ticketId}/history`);
-  return res.data;
+export const getTicketHistory = async () => {
+  return []; // UI에서 오류 방지용
 };
