@@ -21,6 +21,7 @@ export default function Sidebar() {
     if (storedRole) setRole(storedRole);
   }, []);
 
+  // 역할별 대시보드 경로
   const dashboardPath: Record<string, string> = {
     super_admin: "/dashboard/admin",
     admin: "/dashboard/admin",
@@ -34,7 +35,9 @@ export default function Sidebar() {
 
   const getDashboardPath = () => dashboardPath[role] || "/dashboard/user";
 
-  // 역할별 메뉴 (사용자 관리 → SLA 알림 바로 아래 위치)
+  // =========================================================
+  // 역할별 메뉴 구성 (사용자 관리 → SLA 알림 바로 아래로 배치)
+  // =========================================================
   const menuByRole: Record<
     string,
     { icon: any; path: string; tooltip: string }[]
@@ -42,10 +45,9 @@ export default function Sidebar() {
     super_admin: [
       { icon: BarChart3, path: getDashboardPath(), tooltip: "대시보드" },
       { icon: Ticket, path: "/tickets", tooltip: "티켓 관리" },
-
       { icon: Bell, path: "/sla/alerts", tooltip: "SLA 알림" },
 
-      // 🔽 여기에 사용자 관리 위치
+      // 🔽 요청한 대로 SLA 바로 아래에 사용자 관리 배치
       { icon: Users, path: "/users/pending", tooltip: "사용자 관리" },
 
       { icon: Shield, path: "/audit", tooltip: "감사 로그" },
@@ -55,21 +57,17 @@ export default function Sidebar() {
     admin: [
       { icon: BarChart3, path: getDashboardPath(), tooltip: "대시보드" },
       { icon: Ticket, path: "/tickets", tooltip: "티켓 관리" },
-
       { icon: Bell, path: "/sla/alerts", tooltip: "SLA 알림" },
 
-      // 🔽 사용자 관리
       { icon: Users, path: "/users/pending", tooltip: "사용자 관리" },
 
       { icon: Shield, path: "/audit", tooltip: "감사 로그" },
     ],
 
     manager: [
-      { icon: BarChart3, path: getDashboardPath(), tooltip: "대시보드" },
+      { icon: BarChart3, path: getDashboardPath(), tooltip: "부서 대시보드" },
       { icon: Ticket, path: "/tickets/department", tooltip: "부서 티켓" },
       { icon: Bell, path: "/sla/department", tooltip: "SLA 상태" },
-
-      // 🔽 관리자/매니저는 팀원 관리가 이 위치
       { icon: Users, path: "/users/team", tooltip: "팀원 관리" },
     ],
 
@@ -107,7 +105,7 @@ export default function Sidebar() {
   return (
     <aside className="w-20 bg-indigo-100 text-slate-700 flex flex-col items-center py-6 space-y-6 shadow-md">
       {/* 로고 */}
-      <div className="text-lg font-bold mb-4 text-slate-800">KDN</div>
+      <div className="text-lg font-bold mb-4 text-indigo-700">KDN</div>
 
       {/* 메뉴 */}
       <nav className="flex flex-col items-center space-y-8">
@@ -117,10 +115,12 @@ export default function Sidebar() {
             <Link
               key={idx}
               href={menu.path}
-              className="group relative hover:text-indigo-500 transition-colors"
+              className="group relative hover:text-indigo-600 transition"
             >
               <Icon className="w-6 h-6" />
-              <span className="absolute left-12 top-1/2 -translate-y-1/2 bg-indigo-600 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+
+              {/* Tooltip */}
+              <span className="absolute left-12 top-1/2 -translate-y-1/2 bg-indigo-600 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
                 {menu.tooltip}
               </span>
             </Link>
@@ -128,9 +128,12 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* 로그아웃 버튼 */}
+      {/* 로그아웃 */}
       <div className="mt-auto mb-4">
-        <Link href="/login" className="hover:text-indigo-500 transition-colors">
+        <Link
+          href="/auth/login"
+          className="hover:text-indigo-600 transition-colors"
+        >
           <LogOut className="w-5 h-5" />
         </Link>
       </div>
