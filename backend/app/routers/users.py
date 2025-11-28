@@ -43,30 +43,24 @@ def approve_user(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    # 접근권한 검사
     if current_user.role.name not in ["admin", "super_admin"]:
         raise HTTPException(status_code=403, detail="관리자만 승인할 수 있습니다.")
 
-    # 사용자 조회
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
 
-    # 중복 승인 방지
     if user.is_active:
         return {"msg": f"{user.username} 계정은 이미 활성화되어 있습니다."}
 
-    # 역할 존재 여부 체크
     role = db.query(models.Role).filter(models.Role.id == body.role_id).first()
     if not role:
         raise HTTPException(status_code=400, detail="존재하지 않는 역할입니다.")
 
-    # 부서 존재 여부 체크
     department = db.query(models.Department).filter(models.Department.id == body.department_id).first()
     if not department:
         raise HTTPException(status_code=400, detail="존재하지 않는 부서입니다.")
 
-    # 승인(권한 + 부서 + 활성화 처리)
     user.role_id = body.role_id
     user.department_id = body.department_id
     user.is_active = True
@@ -74,9 +68,6 @@ def approve_user(
     db.commit()
     db.refresh(user)
 
-    # ============================
-    # 📌 감사 로그 기록 추가
-    # ============================
     changed = {
         "assigned_role": role.name,
         "assigned_department": department.name,
@@ -90,8 +81,7 @@ def approve_user(
         target_table="users",
         target_id=user.id,
         details=f"{changed}",
-        ip_address=request.client.host,
-        user_agent=request.headers.get("User-Agent"),
+        request=request,
         target_department_id=user.department_id,
     )
 
