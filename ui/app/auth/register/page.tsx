@@ -19,10 +19,9 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // 성공 모달
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // 회원가입 처리 (POST /signup)
+  // 회원가입 처리
   const handleRegister = async () => {
     setError("");
 
@@ -46,45 +45,71 @@ export default function RegisterPage() {
       });
 
       setShowSuccess(true);
-    } catch (err) {
+    } catch {
       setError("회원가입 실패. 이미 존재하는 아이디 또는 이메일입니다.");
     } finally {
       setLoading(false);
     }
   };
 
-  // 확인 → 로그인 페이지로 이동
   const handleSuccessConfirm = () => {
     router.push("/auth/login");
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen page-fadein">
 
-      {/* LEFT side */}
+      {/* LEFT SIDE */}
       <div className="w-1/2 flex flex-col items-center justify-center relative bg-[#eef2ff]">
-        <div className="absolute top-28 left-24 w-[260px] h-[260px] bg-indigo-300/40 rounded-full blur-[120px]"></div>
 
-        <div className="mb-10 scale-125 neon-pulse animate-float">
+        {/* Glow */}
+        <div className="absolute top-28 left-24 w-[260px] h-[260px] bg-indigo-300/40 rounded-full blur-[120px]" />
+
+        {/* Logo */}
+        <div className="mb-6 scale-125 neon-pulse animate-float">
           <BrandLogo />
         </div>
 
-        <h1 className="text-gray-800 text-[44px] font-light tracking-[0.20em] text-center leading-tight">
-          CREATE <br /> ACCOUNT
-        </h1>
+        {/* One-line Text */}
+        <div className="text-center mt-4 select-none relative">
+          <h1
+            className="
+              text-[54px] font-light
+              tracking-[0.06em]
+              bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500
+              bg-clip-text text-transparent
+              drop-shadow-[0_6px_18px_rgba(130,120,255,0.28)]
+              relative z-10
+            "
+          >
+            CREATE ACCOUNT
+          </h1>
 
-        <p className="text-indigo-700 font-medium text-lg mt-6 tracking-wide">
-          Join Operation Log System
-        </p>
+          {/* Soft floating shadow */}
+          <div
+            className="
+              absolute left-1/2 -translate-x-1/2 mt-[-14px]
+              w-[360px] h-[36px]
+              bg-gradient-to-r from-indigo-400/20 via-purple-400/18 to-fuchsia-400/20
+              blur-[30px] rounded-full opacity-80
+            "
+          ></div>
+        </div>
       </div>
 
-      {/* RIGHT side */}
+      {/* RIGHT SIDE */}
       <div className="w-1/2 flex flex-col justify-center items-center bg-white">
         <div className="w-80">
 
-          <h2 className="text-center text-3xl font-semibold text-indigo-700 mb-10">
-            Register
-          </h2>
+          {/* Tabs */}
+          <div className="flex justify-center gap-4 mb-8">
+            <button className="text-indigo-700 font-semibold border-b-2 border-indigo-700 pb-1">
+              Register
+            </button>
+            <button className="text-gray-400 hover:text-indigo-600 transition">
+              WebAuthn
+            </button>
+          </div>
 
           {/* Inputs */}
           <div className="flex flex-col gap-4">
@@ -93,8 +118,9 @@ export default function RegisterPage() {
               placeholder="Username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="border rounded-lg px-4 py-3 text-gray-800 shadow-sm transition 
-              focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              className="border rounded-lg px-4 py-3 shadow-sm transition 
+                         text-gray-800 focus:outline-none
+                         focus:ring-2 focus:ring-indigo-400"
             />
 
             <input
@@ -102,8 +128,9 @@ export default function RegisterPage() {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="border rounded-lg px-4 py-3 text-gray-800 shadow-sm transition 
-              focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              className="border rounded-lg px-4 py-3 shadow-sm transition 
+                         text-gray-800 focus:outline-none
+                         focus:ring-2 focus:ring-indigo-400"
             />
 
             <input
@@ -111,8 +138,9 @@ export default function RegisterPage() {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="border rounded-lg px-4 py-3 text-gray-800 shadow-sm transition 
-              focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              className="border rounded-lg px-4 py-3 shadow-sm transition 
+                         text-gray-800 focus:outline-none
+                         focus:ring-2 focus:ring-indigo-400"
             />
 
             <input
@@ -120,12 +148,13 @@ export default function RegisterPage() {
               placeholder="Confirm Password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="border rounded-lg px-4 py-3 text-gray-800 shadow-sm transition 
-              focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              className="border rounded-lg px-4 py-3 shadow-sm transition 
+                         text-gray-800 focus:outline-none
+                         focus:ring-2 focus:ring-indigo-400"
             />
           </div>
 
-          {/* Auto */}
+          {/* Auto sign-in */}
           <div className="flex items-center gap-2 mt-3 text-sm">
             <input
               type="checkbox"
@@ -135,27 +164,26 @@ export default function RegisterPage() {
             <span className="text-gray-700">Auto sign in after registration</span>
           </div>
 
-          {/* Error */}
+          {/* Error message */}
           {error && (
-            <p className="text-red-500 text-sm text-center mt-4">{error}</p>
+            <p className="text-red-500 text-sm text-center mt-3">{error}</p>
           )}
 
-          {/* Button */}
+          {/* Submit btn */}
           <button
             onClick={handleRegister}
             disabled={loading}
-            className={`w-full mt-6 bg-indigo-600 text-white py-3 rounded-lg font-semibold shadow-md 
-            hover:bg-indigo-700 transition ${
-              loading ? "opacity-70 cursor-not-allowed" : ""
-            }`}
+            className={`w-full mt-6 bg-indigo-600 text-white py-3 rounded-lg 
+                        font-semibold shadow-md hover:bg-indigo-700 transition
+                        ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
           >
             {loading ? "Creating account..." : "Sign Up"}
           </button>
 
-          {/* Link */}
+          {/* Login link */}
           <p className="text-center mt-6 text-sm text-gray-500">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-indigo-600 hover:underline">
+            <Link href="/auth/login" className="text-indigo-600 font-medium hover:underline">
               Login here
             </Link>
           </p>
