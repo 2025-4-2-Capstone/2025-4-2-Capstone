@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 
 /* ----------------------------
-    0) Axios 인스턴스 (token 자동 포함)
+    Axios 인스턴스
 ----------------------------- */
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
@@ -19,29 +19,25 @@ api.interceptors.request.use((config) => {
 });
 
 /* ----------------------------
-    1) API 함수
+    API 함수
 ----------------------------- */
 
-// 전체 티켓 목록 조회
 const apiGetTickets = async () => {
   const res = await api.get("/tickets");
   return res.data;
 };
 
-// 티켓 생성
 const apiCreateTicket = async (data) => {
   const res = await api.post("/tickets", data);
   return res.data;
 };
 
-// 티켓 업데이트
 const apiUpdateTicket = async (ticketId, data) => {
   const res = await api.put(`/tickets/${ticketId}`, data);
   return res.data;
 };
 
-// 변경 이력 조회 (현재 임시)
-const apiGetHistory = async (ticketId) => {
+const apiGetHistory = async () => {
   return [
     { id: 1, message: "상태 변경됨", created_at: "2025-11-28 10:21" },
     { id: 2, message: "우선순위 변경됨", created_at: "2025-11-28 11:10" },
@@ -49,7 +45,7 @@ const apiGetHistory = async (ticketId) => {
 };
 
 /* ----------------------------
-    2) 부서 / SLA / 배지
+    부서 / SLA / 배지
 ----------------------------- */
 
 const deptMap = {
@@ -86,7 +82,7 @@ const statusBadge = {
 };
 
 /* ----------------------------
-    3) 페이지 컴포넌트
+    페이지
 ----------------------------- */
 
 export default function TicketsPage() {
@@ -94,46 +90,34 @@ export default function TicketsPage() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const [editMode, setEditMode] = useState(false);
-  const [editData, setEditData] = useState({});
-
   const [newModal, setNewModal] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] = useState("normal");
   const [newDescription, setNewDescription] = useState("");
+
   const [creating, setCreating] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState({});
 
   const [logModal, setLogModal] = useState(false);
   const [logs, setLogs] = useState([]);
 
-  /* ----------------------------
-      ⭐ NEW / UPDATED 강조용 state
-  ----------------------------- */
   const [newTicketId, setNewTicketId] = useState(null);
   const [updatedTicketId, setUpdatedTicketId] = useState(null);
 
-  /* ----------------------------
-      초기 로드
-  ----------------------------- */
   const loadTickets = async () => {
     setLoading(true);
-    try {
-      const data = await apiGetTickets();
-      setTickets(data);
-    } finally {
-      setLoading(false);
-    }
+    const data = await apiGetTickets();
+    setTickets(data);
+    setLoading(false);
   };
 
   useEffect(() => {
     loadTickets();
   }, []);
 
-  /* ----------------------------
-      새 티켓 생성
-  ----------------------------- */
   const handleCreate = async () => {
-    if (!newTitle.trim() || !newDescription.trim()) return alert("입력 필요");
+    if (!newTitle.trim() || !newDescription.trim()) return;
 
     setCreating(true);
     try {
@@ -143,9 +127,8 @@ export default function TicketsPage() {
         priority: newPriority,
       });
 
-      // ⭐ NEW 강조 적용
       setNewTicketId(created.id);
-      setTimeout(() => setNewTicketId(null), 30000); // 30초 후 제거
+      setTimeout(() => setNewTicketId(null), 30000);
 
       setNewModal(false);
       setNewTitle("");
@@ -158,9 +141,6 @@ export default function TicketsPage() {
     }
   };
 
-  /* ----------------------------
-      수정 모드
-  ----------------------------- */
   const startEdit = () => {
     setEditMode(true);
     setEditData({
@@ -172,26 +152,19 @@ export default function TicketsPage() {
   };
 
   const saveEdit = async () => {
-    try {
-      await apiUpdateTicket(selected.id, editData);
+    await apiUpdateTicket(selected.id, editData);
 
-      // ⭐ UPDATED 강조 적용
-      setUpdatedTicketId(selected.id);
-      setTimeout(() => setUpdatedTicketId(null), 30000); // 30초 뒤 자동 제거
+    setUpdatedTicketId(selected.id);
+    setTimeout(() => setUpdatedTicketId(null), 30000);
 
-      setSelected({ ...selected, ...editData });
-      setEditMode(false);
-    } catch {
-      alert("수정 실패");
-    }
+    setSelected({ ...selected, ...editData });
+    setEditMode(false);
   };
 
   if (loading) return <div className="p-8">로딩 중...</div>;
 
   return (
     <div className="p-10 bg-gray-50 min-h-screen">
-
-      {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-semibold">티켓 목록</h1>
         <button
@@ -204,14 +177,14 @@ export default function TicketsPage() {
 
       {/* LIST */}
       <div className="bg-white p-6 rounded-xl shadow border">
-        <table className="w-full text-left">
+        <table className="w-full">
           <thead className="border-b">
             <tr>
-              <th className="py-3">#</th>
-              <th>제목</th>
-              <th>우선순위</th>
-              <th>상태</th>
-              <th>작성일</th>
+              <th className="py-3 text-center">#</th>
+              <th className="text-center">제목</th>
+              <th className="text-center">우선순위</th>
+              <th className="text-center">상태</th>
+              <th className="text-center">작성일</th>
             </tr>
           </thead>
 
@@ -219,37 +192,36 @@ export default function TicketsPage() {
             {tickets.map((t) => (
               <tr
                 key={t.id}
-                className={`
-                  border-b cursor-pointer hover:bg-gray-100 transition
-                  ${newTicketId === t.id ? "border-green-500 bg-green-50" : ""}
-                  ${updatedTicketId === t.id ? "border-blue-500 bg-blue-50" : ""}
-                `}
+                className={`border-b cursor-pointer hover:bg-gray-100 transition ${
+                  newTicketId === t.id ? "border-green-500 bg-green-50" : ""
+                } ${updatedTicketId === t.id ? "border-blue-500 bg-blue-50" : ""}`}
                 onClick={() => {
                   setSelected(t);
                   setEditMode(false);
                 }}
               >
-                <td className="py-3">#{t.id}</td>
+                <td className="py-3 text-center">#{t.id}</td>
 
-                {/* NEW / UPDATED 뱃지 포함 */}
-                <td className="font-medium flex items-center gap-2">
+                {/* 제목 가운데 정렬 수정 */}
+                <td className="font-medium text-center">
+                  <div className="inline-flex items-center gap-2">
+                    {newTicketId === t.id && (
+                      <span className="px-2 py-1 text-xs bg-green-600 text-white rounded-md">
+                        NEW
+                      </span>
+                    )}
 
-                  {newTicketId === t.id && (
-                    <span className="px-2 py-1 text-xs bg-green-600 text-white rounded-md">
-                      NEW
-                    </span>
-                  )}
+                    {updatedTicketId === t.id && (
+                      <span className="px-2 py-1 text-xs bg-blue-600 text-white rounded-md">
+                        UPDATED
+                      </span>
+                    )}
 
-                  {updatedTicketId === t.id && (
-                    <span className="px-2 py-1 text-xs bg-blue-600 text-white rounded-md">
-                      UPDATED
-                    </span>
-                  )}
-
-                  {t.title}
+                    {t.title}
+                  </div>
                 </td>
 
-                <td>
+                <td className="text-center">
                   <span
                     className={`${priorityBadge[t.priority]} px-3 py-1 rounded-full text-sm font-semibold`}
                   >
@@ -257,7 +229,7 @@ export default function TicketsPage() {
                   </span>
                 </td>
 
-                <td>
+                <td className="text-center">
                   <span
                     className={`${statusBadge[t.status]} px-3 py-1 rounded-full text-sm font-semibold`}
                   >
@@ -265,16 +237,16 @@ export default function TicketsPage() {
                   </span>
                 </td>
 
-                <td>{new Date(t.created_at).toLocaleString("ko-KR")}</td>
+                <td className="text-center">
+                  {new Date(t.created_at).toLocaleString("ko-KR")}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* ----------------------------
-          새 티켓 생성 모달
-      ----------------------------- */}
+      {/* NEW MODAL */}
       {newModal && (
         <div
           className="fixed inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-50"
@@ -337,9 +309,7 @@ export default function TicketsPage() {
         </div>
       )}
 
-      {/* ----------------------------
-          상세 모달
-      ----------------------------- */}
+      {/* DETAIL MODAL */}
       {selected && (
         <div
           className="fixed inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-50"
@@ -484,7 +454,7 @@ export default function TicketsPage() {
 
                 <button
                   onClick={async () => {
-                    const data = await apiGetHistory(selected.id);
+                    const data = await apiGetHistory();
                     setLogs(data);
                     setLogModal(true);
                   }}
@@ -505,9 +475,7 @@ export default function TicketsPage() {
         </div>
       )}
 
-      {/* ----------------------------
-          변경 이력 모달
-      ----------------------------- */}
+      {/* LOG MODAL */}
       {logModal && (
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center"
@@ -523,9 +491,7 @@ export default function TicketsPage() {
               {logs.map((log) => (
                 <div key={log.id} className="bg-gray-50 p-3 border rounded-lg">
                   <p className="text-sm">{log.message}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {log.created_at}
-                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{log.created_at}</p>
                 </div>
               ))}
             </div>
@@ -539,7 +505,6 @@ export default function TicketsPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
